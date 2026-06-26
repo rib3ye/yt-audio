@@ -10,6 +10,16 @@ AAC at highest VBR quality.
 
 ## Install
 
+The script needs [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) and `ffmpeg`. If either is
+missing when you run it, `yt-audio` offers to install them with Homebrew for you:
+
+```
+yt-audio: missing dependencies: yt-dlp ffmpeg
+Install them now with "brew install yt-dlp ffmpeg"? [y/N]
+```
+
+Or install them up front yourself:
+
 ```sh
 brew install yt-dlp ffmpeg
 ```

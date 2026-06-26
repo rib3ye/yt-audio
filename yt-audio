@@ -71,8 +71,33 @@ done
 [ "${#urls[@]}" -gt 0 ] || usage 1
 
 # --- dependency checks ------------------------------------------------------
-command -v yt-dlp >/dev/null 2>&1 || die "yt-dlp not found. Install with: brew install yt-dlp"
-command -v ffmpeg >/dev/null 2>&1 || die "ffmpeg not found. Install with: brew install ffmpeg"
+# Collect anything missing, then offer to install it with Homebrew.
+missing=()
+command -v yt-dlp >/dev/null 2>&1 || missing+=(yt-dlp)
+command -v ffmpeg >/dev/null 2>&1 || missing+=(ffmpeg)
+
+if [ "${#missing[@]}" -gt 0 ]; then
+  printf '%s: missing dependencies: %s\n' "$prog" "${missing[*]}" >&2
+
+  command -v brew >/dev/null 2>&1 ||
+    die "Homebrew not found — install it from https://brew.sh, then run: brew install ${missing[*]}"
+  [ -t 0 ] ||
+    die "not an interactive terminal; install manually with: brew install ${missing[*]}"
+
+  printf 'Install them now with "brew install %s"? [y/N] ' "${missing[*]}" >&2
+  read -r reply || reply=""
+  case "$reply" in
+    [yY] | [yY][eE][sS])
+      brew install "${missing[@]}"
+      for dep in "${missing[@]}"; do
+        command -v "$dep" >/dev/null 2>&1 || die "$dep still not found after install"
+      done
+      ;;
+    *)
+      die "cannot continue without: ${missing[*]}"
+      ;;
+  esac
+fi
 
 mkdir -p "$out_dir"
 
