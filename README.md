@@ -65,10 +65,22 @@ export YT_AUDIO_DIR="$HOME/Music/Imports"
 
 ## Put it on your PATH (optional)
 
+Copy it into a directory on your PATH with `install` (sets executable perms in one step):
+
 ```sh
-ln -s "$PWD/yt-audio" /opt/homebrew/bin/yt-audio
+install -m 755 yt-audio /opt/homebrew/bin/yt-audio
 # then from anywhere:
 yt-audio "https://www.youtube.com/watch?v=..."
+```
+
+This copies the script, so re-run that command after editing it to update the installed
+copy. To uninstall: `rm /opt/homebrew/bin/yt-audio`.
+
+If you're still hacking on the script and want edits to go live instantly, symlink it
+instead (breaks if you move or delete the repo):
+
+```sh
+ln -s "$PWD/yt-audio" /opt/homebrew/bin/yt-audio
 ```
 
 ## Notes
