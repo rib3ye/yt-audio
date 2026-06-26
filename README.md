@@ -76,13 +76,6 @@ yt-audio "https://www.youtube.com/watch?v=..."
 This copies the script, so re-run that command after editing it to update the installed
 copy. To uninstall: `rm /opt/homebrew/bin/yt-audio`.
 
-If you're still hacking on the script and want edits to go live instantly, symlink it
-instead (breaks if you move or delete the repo):
-
-```sh
-ln -s "$PWD/yt-audio" /opt/homebrew/bin/yt-audio
-```
-
 ## Notes
 
 - **Why `.m4a`/AAC?** Music plays AAC natively and YouTube serves a native AAC
