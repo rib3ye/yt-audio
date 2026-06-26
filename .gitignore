@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Downloaded audio / yt-dlp intermediates (in case anyone runs it inside the repo)
+*.m4a
+*.mp3
+*.opus
+*.webp
+*.jpg
+*.part
+*.ytdl

@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+#
+# yt-audio — download YouTube audio in the highest quality the macOS Music app plays.
+#
+# Pulls the best available audio stream and produces an .m4a (AAC) file with
+# metadata, chapters, and cover art embedded — the format Music handles natively.
+# Native AAC streams are remuxed (no re-encode); other sources (e.g. Opus) are
+# transcoded to AAC at highest VBR quality.
+#
+# Usage:
+#   yt-audio <youtube-url> [more-urls...]
+#   yt-audio -a <url>                 # also import the result into the Music app
+#   yt-audio -d ~/Music/Imports <url> # download into a specific directory
+#   yt-audio --playlist <url>         # download the whole playlist (off by default)
+#
+# Options:
+#   -d, --dir DIR     Output directory (default: $YT_AUDIO_DIR or ~/Music/YouTube)
+#   -a, --add         Add each finished file to the Music app
+#       --playlist    Allow downloading a full playlist (default: single video)
+#   -h, --help        Show this help
+#
+# Requires: yt-dlp, ffmpeg  (brew install yt-dlp ffmpeg)
+# Optional: atomicparsley   (brew install atomicparsley)  — for reliable .m4a cover art
+
+set -euo pipefail
+
+prog=$(basename "$0")
+
+usage() {
+  cat <<EOF
+yt-audio — download YouTube audio in the highest quality the macOS Music app plays.
+
+Usage:
+  $prog <youtube-url> [more-urls...]
+  $prog -a <url>                 # also import the result into the Music app
+  $prog -d ~/Music/Imports <url> # download into a specific directory
+  $prog --playlist <url>         # download the whole playlist (off by default)
+
+Options:
+  -d, --dir DIR     Output directory (default: \$YT_AUDIO_DIR or ~/Music/YouTube)
+  -a, --add         Add each finished file to the Music app
+      --playlist    Allow downloading a full playlist (default: single video)
+  -h, --help        Show this help
+
+Requires: yt-dlp, ffmpeg  (brew install yt-dlp ffmpeg)
+EOF
+  exit "${1:-0}"
+}
+
+die() { printf '%s: %s\n' "$prog" "$1" >&2; exit 1; }
+
+# --- defaults ---------------------------------------------------------------
+out_dir="${YT_AUDIO_DIR:-$HOME/Music/YouTube}"
+add_to_music=0
+no_playlist=1
+urls=()
+
+# --- parse args -------------------------------------------------------------
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -d|--dir)    [ $# -ge 2 ] || die "$1 needs a directory"; out_dir="$2"; shift 2 ;;
+    -a|--add)    add_to_music=1; shift ;;
+    --playlist)  no_playlist=0; shift ;;
+    -h|--help)   usage 0 ;;
+    --)          shift; while [ $# -gt 0 ]; do urls+=("$1"); shift; done ;;
+    -*)          die "unknown option: $1 (try --help)" ;;
+    *)           urls+=("$1"); shift ;;
+  esac
+done
+
+[ "${#urls[@]}" -gt 0 ] || usage 1
+
+# --- dependency checks ------------------------------------------------------
+command -v yt-dlp >/dev/null 2>&1 || die "yt-dlp not found. Install with: brew install yt-dlp"
+command -v ffmpeg >/dev/null 2>&1 || die "ffmpeg not found. Install with: brew install ffmpeg"
+
+mkdir -p "$out_dir"
+
+# --- build yt-dlp invocation ------------------------------------------------
+args=(
+  # Prefer a native AAC (.m4a) stream so we remux without re-encoding; fall back
+  # to the best available audio and let the extractor convert it to AAC.
+  -f 'bestaudio[ext=m4a]/bestaudio/best'
+  --extract-audio
+  --audio-format m4a
+  --audio-quality 0          # highest VBR quality when a conversion is needed
+  --embed-metadata           # title/artist/album/date tags
+  --embed-thumbnail          # cover art (embedded via mutagen, bundled with yt-dlp)
+  --embed-chapters           # chapter markers, if the video has them
+  --output "$out_dir/%(title)s.%(ext)s"
+  --no-overwrites
+  --continue
+  --restrict-filenames       # filesystem-safe names
+  --console-title
+)
+
+[ "$no_playlist" -eq 1 ] && args+=(--no-playlist)
+[ "$add_to_music" -eq 1 ] && args+=(--exec 'open -a Music {}')
+
+# --- run --------------------------------------------------------------------
+echo "→ Saving to: $out_dir"
+yt-dlp "${args[@]}" "${urls[@]}"
+echo "✓ Done."
