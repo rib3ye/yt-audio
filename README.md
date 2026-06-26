@@ -35,7 +35,7 @@ The script itself needs no install — just run it.
 Examples:
 
 ```sh
-# Single track → ~/Music/YouTube/
+# Single track → ~/Downloads/
 ./yt-audio "https://www.youtube.com/watch?v=jNQXAC9IVRw"
 
 # Download and import straight into the Music app
@@ -52,7 +52,7 @@ Examples:
 
 | Flag | Description |
 |------|-------------|
-| `-d, --dir DIR` | Output directory (default: `$YT_AUDIO_DIR` or `~/Music/YouTube`) |
+| `-d, --dir DIR` | Output directory (default: `$YT_AUDIO_DIR` or `~/Downloads`) |
 | `-a, --add` | Add each finished file to the Music app |
 | `--playlist` | Allow downloading a full playlist (default: single video) |
 | `-h, --help` | Show help |
@@ -65,16 +65,20 @@ export YT_AUDIO_DIR="$HOME/Music/Imports"
 
 ## Put it on your PATH (optional)
 
-Copy it into a directory on your PATH with `install` (sets executable perms in one step):
+Copy it into a directory on your PATH with `install` (sets executable perms in one step).
+`~/.local/bin` is the conventional spot for personal scripts:
 
 ```sh
-install -m 755 yt-audio /opt/homebrew/bin/yt-audio
+install -m 755 yt-audio ~/.local/bin/yt-audio
 # then from anywhere:
 yt-audio "https://www.youtube.com/watch?v=..."
 ```
 
-This copies the script, so re-run that command after editing it to update the installed
-copy. To uninstall: `rm /opt/homebrew/bin/yt-audio`.
+If `~/.local/bin` isn't already on your PATH, add it (e.g. in `~/.zshrc`):
+`export PATH="$HOME/.local/bin:$PATH"`.
+
+This copies the script, so re-run the install after editing it to update the installed
+copy. To uninstall: `rm ~/.local/bin/yt-audio`.
 
 ## Notes
 

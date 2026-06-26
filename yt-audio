@@ -14,7 +14,7 @@
 #   yt-audio --playlist <url>         # download the whole playlist (off by default)
 #
 # Options:
-#   -d, --dir DIR     Output directory (default: $YT_AUDIO_DIR or ~/Music/YouTube)
+#   -d, --dir DIR     Output directory (default: $YT_AUDIO_DIR or ~/Downloads)
 #   -a, --add         Add each finished file to the Music app
 #       --playlist    Allow downloading a full playlist (default: single video)
 #   -h, --help        Show this help
@@ -37,7 +37,7 @@ Usage:
   $prog --playlist <url>         # download the whole playlist (off by default)
 
 Options:
-  -d, --dir DIR     Output directory (default: \$YT_AUDIO_DIR or ~/Music/YouTube)
+  -d, --dir DIR     Output directory (default: \$YT_AUDIO_DIR or ~/Downloads)
   -a, --add         Add each finished file to the Music app
       --playlist    Allow downloading a full playlist (default: single video)
   -h, --help        Show this help
@@ -50,7 +50,7 @@ EOF
 die() { printf '%s: %s\n' "$prog" "$1" >&2; exit 1; }
 
 # --- defaults ---------------------------------------------------------------
-out_dir="${YT_AUDIO_DIR:-$HOME/Music/YouTube}"
+out_dir="${YT_AUDIO_DIR:-$HOME/Downloads}"
 add_to_music=0
 no_playlist=1
 urls=()
