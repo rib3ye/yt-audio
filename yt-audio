@@ -7,14 +7,20 @@
 # Native AAC streams are remuxed (no re-encode); other sources (e.g. Opus) are
 # transcoded to AAC at highest VBR quality.
 #
+# Other formats are available with -f: mp3, opus, flac, alac, wav. Each is
+# always encoded at the highest quality that format allows.
+#
 # Usage:
 #   yt-audio <youtube-url> [more-urls...]
 #   yt-audio -a <url>                 # also import the result into the Music app
 #   yt-audio -d ~/Music/Imports <url> # download into a specific directory
 #   yt-audio --playlist <url>         # download the whole playlist (off by default)
+#   yt-audio -f mp3 <url>             # pick the output format (default: m4a)
 #
 # Options:
 #   -d, --dir DIR     Output directory (default: $YT_AUDIO_DIR or ~/Downloads)
+#   -f, --format FMT  Output format: m4a, mp3, opus, flac, alac, wav
+#                     (default: $YT_AUDIO_FORMAT or m4a)
 #   -a, --add         Add each finished file to the Music app
 #       --playlist    Allow downloading a full playlist (default: single video)
 #   -h, --help        Show this help
@@ -35,9 +41,12 @@ Usage:
   $prog -a <url>                 # also import the result into the Music app
   $prog -d ~/Music/Imports <url> # download into a specific directory
   $prog --playlist <url>         # download the whole playlist (off by default)
+  $prog -f mp3 <url>             # pick the output format (default: m4a)
 
 Options:
   -d, --dir DIR     Output directory (default: \$YT_AUDIO_DIR or ~/Downloads)
+  -f, --format FMT  Output format: m4a, mp3, opus, flac, alac, wav
+                    (default: \$YT_AUDIO_FORMAT or m4a)
   -a, --add         Add each finished file to the Music app
       --playlist    Allow downloading a full playlist (default: single video)
   -h, --help        Show this help
@@ -51,6 +60,7 @@ die() { printf '%s: %s\n' "$prog" "$1" >&2; exit 1; }
 
 # --- defaults ---------------------------------------------------------------
 out_dir="${YT_AUDIO_DIR:-$HOME/Downloads}"
+format="${YT_AUDIO_FORMAT:-m4a}"
 add_to_music=0
 no_playlist=1
 urls=()
@@ -59,6 +69,7 @@ urls=()
 while [ $# -gt 0 ]; do
   case "$1" in
     -d|--dir)    [ $# -ge 2 ] || die "$1 needs a directory"; out_dir="$2"; shift 2 ;;
+    -f|--format) [ $# -ge 2 ] || die "$1 needs a format"; format="$2"; shift 2 ;;
     -a|--add)    add_to_music=1; shift ;;
     --playlist)  no_playlist=0; shift ;;
     -h|--help)   usage 0 ;;
@@ -69,6 +80,41 @@ while [ $# -gt 0 ]; do
 done
 
 [ "${#urls[@]}" -gt 0 ] || usage 1
+
+# --- output format ----------------------------------------------------------
+# Per format: which source stream to prefer, the yt-dlp codec name, and the
+# highest quality setting that codec accepts. When the source is already in the
+# target codec, yt-dlp copies it instead of re-encoding.
+format=$(printf '%s' "$format" | tr '[:upper:]' '[:lower:]')
+embed_thumbnail=1
+music_plays=1
+pp_args=''
+case "$format" in
+  m4a|aac)
+    # Native AAC stream is remuxed; anything else becomes AAC at highest VBR.
+    selector='bestaudio[ext=m4a]/bestaudio/best'; codec=m4a; quality=0 ;;
+  mp3)
+    # 320 kbps CBR is the MP3 ceiling.
+    selector='bestaudio/best'; codec=mp3; quality=320K ;;
+  opus)
+    # Native Opus stream is copied; 256 kbps is libopus's per-channel maximum.
+    selector='bestaudio[acodec=opus]/bestaudio/best'; codec=opus; quality=256K
+    music_plays=0 ;;
+  flac)
+    selector='bestaudio/best'; codec=flac; quality=0; music_plays=0 ;;
+  alac)
+    # yt-dlp drops the encoder flag for ALAC and writes AAC instead; force it.
+    selector='bestaudio/best'; codec=alac; quality=0
+    pp_args='ExtractAudio:-acodec alac' ;;
+  wav)
+    # WAV has no cover-art slot, so skip the thumbnail.
+    selector='bestaudio/best'; codec=wav; quality=0; embed_thumbnail=0 ;;
+  *)
+    die "unknown format: $format (choose: m4a, mp3, opus, flac, alac, wav)" ;;
+esac
+
+[ "$add_to_music" -eq 1 ] && [ "$music_plays" -eq 0 ] &&
+  die "the Music app can't play $format — drop --add or pick m4a, mp3, alac, or wav"
 
 # --- dependency checks ------------------------------------------------------
 # Collect anything missing, then offer to install it with Homebrew.
@@ -103,14 +149,11 @@ mkdir -p "$out_dir"
 
 # --- build yt-dlp invocation ------------------------------------------------
 args=(
-  # Prefer a native AAC (.m4a) stream so we remux without re-encoding; fall back
-  # to the best available audio and let the extractor convert it to AAC.
-  -f 'bestaudio[ext=m4a]/bestaudio/best'
+  -f "$selector"
   --extract-audio
-  --audio-format m4a
-  --audio-quality 0          # highest VBR quality when a conversion is needed
+  --audio-format "$codec"
+  --audio-quality "$quality" # highest the format allows, when a conversion is needed
   --embed-metadata           # title/artist/album/date tags
-  --embed-thumbnail          # cover art (embedded via mutagen, bundled with yt-dlp)
   --embed-chapters           # chapter markers, if the video has them
   --output "$out_dir/%(title)s.%(ext)s"
   --no-overwrites
@@ -120,9 +163,12 @@ args=(
 )
 
 [ "$no_playlist" -eq 1 ] && args+=(--no-playlist)
+# cover art (embedded via mutagen, bundled with yt-dlp)
+[ "$embed_thumbnail" -eq 1 ] && args+=(--embed-thumbnail)
+[ -n "$pp_args" ] && args+=(--postprocessor-args "$pp_args")
 [ "$add_to_music" -eq 1 ] && args+=(--exec 'open -a Music {}')
 
 # --- run --------------------------------------------------------------------
-echo "→ Saving to: $out_dir"
+echo "→ Saving $format to: $out_dir"
 yt-dlp "${args[@]}" "${urls[@]}"
 echo "✓ Done."

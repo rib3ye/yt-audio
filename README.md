@@ -8,6 +8,9 @@ Music handles natively. When YouTube offers a native AAC stream it's **remuxed w
 no re-encoding** (zero quality loss); other sources (e.g. Opus) are transcoded to
 AAC at highest VBR quality.
 
+Need something else? `-f` also writes `mp3`, `opus`, `flac`, `alac`, or `wav` — each
+always at the highest quality that format allows.
+
 ## Install
 
 The script needs [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) and `ffmpeg`. If either is
@@ -44,6 +47,9 @@ Examples:
 # Pick the output directory
 ./yt-audio -d ~/Music/Imports "https://www.youtube.com/watch?v=..."
 
+# Pick the output format (default: m4a)
+./yt-audio -f mp3 "https://www.youtube.com/watch?v=..."
+
 # Grab a whole playlist (off by default — a single video is downloaded otherwise)
 ./yt-audio --playlist "https://www.youtube.com/playlist?list=..."
 ```
@@ -53,15 +59,35 @@ Examples:
 | Flag | Description |
 |------|-------------|
 | `-d, --dir DIR` | Output directory (default: `$YT_AUDIO_DIR` or `~/Downloads`) |
+| `-f, --format FMT` | Output format: `m4a`, `mp3`, `opus`, `flac`, `alac`, `wav` (default: `$YT_AUDIO_FORMAT` or `m4a`) |
 | `-a, --add` | Add each finished file to the Music app |
 | `--playlist` | Allow downloading a full playlist (default: single video) |
 | `-h, --help` | Show help |
 
-Set a permanent default directory with an environment variable:
+Set a permanent default directory or format with environment variables:
 
 ```sh
 export YT_AUDIO_DIR="$HOME/Music/Imports"
+export YT_AUDIO_FORMAT=mp3
 ```
+
+### Formats
+
+Every format is encoded at the highest quality it allows. When YouTube's stream is
+already in the target codec, it's copied with no re-encoding.
+
+| Format | What you get | Plays in Music |
+|--------|--------------|----------------|
+| `m4a` (default) | Native AAC stream, copied; otherwise AAC at highest VBR | yes |
+| `mp3` | 320 kbps CBR, the MP3 ceiling | yes |
+| `opus` | Native Opus stream, copied; otherwise 256 kbps | no |
+| `flac` | Lossless FLAC | no |
+| `alac` | Apple Lossless in an `.m4a` file | yes |
+| `wav` | Uncompressed 16-bit PCM, no cover art (WAV has no slot for it) | yes |
+
+`--add` refuses `opus` and `flac`, since Music can't play them. YouTube's source is
+always lossy, so `flac`, `alac`, and `wav` preserve that source exactly — they can't
+add quality back, they just avoid a second lossy encode.
 
 ## Put it on your PATH (optional)
 
