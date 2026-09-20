@@ -7,40 +7,40 @@ metadata, chapters, and cover art. Other [formats](#formats) are available with 
 
 ## Install
 
-Install [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) and `ffmpeg` with Homebrew:
+Install with [Homebrew](https://brew.sh) from the [rib3ye tap](https://github.com/rib3ye/homebrew-tap):
 
 ```sh
-brew install yt-dlp ffmpeg
+brew install rib3ye/tap/yt-audio
 ```
 
-The script needs no installation. In an interactive terminal, it also offers to
-install missing tools through Homebrew.
+Homebrew installs `yt-dlp`, `ffmpeg`, and `atomicparsley` automatically.
 
-To update yt-dlp, run `brew upgrade yt-dlp`. YouTube changes can break older versions.
+To update, run `brew upgrade yt-audio yt-dlp`.
+To uninstall, run `brew uninstall yt-audio`.
 
 ## Usage
 
 ```sh
-./yt-audio <youtube-url> [more-urls...]
+yt-audio <youtube-url> [more-urls...]
 ```
 
 Examples:
 
 ```sh
 # Single track → ~/Downloads/
-./yt-audio "https://www.youtube.com/watch?v=jNQXAC9IVRw"
+yt-audio "https://www.youtube.com/watch?v=jNQXAC9IVRw"
 
 # Download and import straight into the Music app
-./yt-audio -a "https://www.youtube.com/watch?v=..."
+yt-audio -a "https://www.youtube.com/watch?v=..."
 
 # Pick the output directory
-./yt-audio -d ~/Music/Imports "https://www.youtube.com/watch?v=..."
+yt-audio -d ~/Music/Imports "https://www.youtube.com/watch?v=..."
 
 # Pick the output format (default: m4a)
-./yt-audio -f mp3 "https://www.youtube.com/watch?v=..."
+yt-audio -f mp3 "https://www.youtube.com/watch?v=..."
 
 # Grab a whole playlist (off by default — a single video is downloaded otherwise)
-./yt-audio --playlist "https://www.youtube.com/playlist?list=..."
+yt-audio --playlist "https://www.youtube.com/playlist?list=..."
 ```
 
 ### Options
@@ -75,11 +75,12 @@ without re-encoding.
 YouTube audio is lossy. The `alac` and `wav` formats avoid another lossy
 encode, but cannot restore lost quality.
 
-## Put it on your PATH (optional)
+## Manual PATH setup (optional)
 
-To run `yt-audio` from any directory, copy it to `~/.local/bin`:
+To install manually, run these commands from the repository directory:
 
 ```sh
+brew install yt-dlp ffmpeg
 mkdir -p ~/.local/bin
 install -m 755 yt-audio ~/.local/bin/yt-audio
 ```
@@ -90,14 +91,10 @@ If `~/.local/bin` is absent from your `PATH`, add this line to `~/.zshrc`:
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Open a new terminal, then run:
-
-```sh
-yt-audio "https://www.youtube.com/watch?v=..."
-```
+Open a new terminal to use `yt-audio` from any directory.
 
 After changes to the script, repeat the `install` command to update the copy.
-To uninstall, run `rm ~/.local/bin/yt-audio`.
+To uninstall the manual copy, run `rm ~/.local/bin/yt-audio`.
 
 ## License
 
